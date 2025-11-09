@@ -1,0 +1,8 @@
+asgiref>=3.10.0
+httpx>=0.28.1
+pydantic>=2.12.4
+pyee>=13.0.0
+python-decouple>=3.8
+reactivex>=4.1.0
+redis>=7.0.1
+websockets>=15.0.1

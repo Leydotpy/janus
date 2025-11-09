@@ -1,0 +1,388 @@
+Metadata-Version: 2.4
+Name: janus-api
+Version: 0.1.4
+Summary: Python bindings for Janus webrtc Media Server
+Author-email: Leydotpy <leydotpy.dev@gmail.com>
+Requires-Python: >=3.14
+Description-Content-Type: text/markdown
+Requires-Dist: asgiref>=3.10.0
+Requires-Dist: httpx>=0.28.1
+Requires-Dist: pydantic>=2.12.4
+Requires-Dist: pyee>=13.0.0
+Requires-Dist: python-decouple>=3.8
+Requires-Dist: reactivex>=4.1.0
+Requires-Dist: redis>=7.0.1
+Requires-Dist: websockets>=15.0.1
+
+# Janus API - Python Client
+
+A modern, async Python client library for the [Janus WebRTC Gateway](https://janus.conf.meetecho.com/).
+
+## Features
+
+- ✨ **Async/Await Support** - Built on `asyncio` for modern Python applications
+- 🔌 **WebSocket Transport** - Real-time communication with Janus server
+- 📹 **VideoRoom Plugin** - Full support for multi-party video conferencing with Publisher/Subscriber patterns
+- 🎙️ **AudioBridge Plugin** - Audio conferencing capabilities
+- 💬 **TextRoom Plugin** - Text chat rooms
+- 🤝 **P2P Plugin** - Peer-to-peer video calls
+- 📡 **Streaming Plugin** - Media streaming support
+- ☎️ **SIP Plugin** - SIP integration
+- 🔒 **Type-Safe** - Fully typed with Pydantic models
+- ⚡ **Event-Driven** - ReactiveX (RxPY) support for reactive programming
+- 🔧 **Plugin Registry** - Automatic plugin discovery and registration
+
+## Installation
+
+```bash
+# Using uv (recommended)
+uv add janus-api
+
+# Using pip
+pip install janus-api
+
+```
+
+# Quick State
+## Basic Session Setup
+
+```python
+import asyncio
+from janus_api import get_session, Plugin
+
+
+async def main():
+    # Create a WebSocket session
+    session = get_session()
+    await session.create()
+
+    # Your code here
+
+    # Clean up
+    await session.destroy()
+
+
+asyncio.run(main())
+```
+
+# Plugin Usage
+## VideoRoom Example - Publisher/Subscriber
+
+```python
+
+from janus_api import Plugin
+from janus_api.models.videoroom.request import SubscriberStreams
+
+async def publish_to_room():
+    # Attach to VideoRoom as a publisher
+    publisher = await Plugin.attach(
+    type="videoroom",
+    mode="publisher",
+    room=1234,
+    username="alice"
+    )
+
+    # Join room and configure
+    response = await publisher.join_and_configure(
+        sdp="your-sdp-offer",
+        sdp_type="offer",
+        audio=True,
+        video=True
+    )
+
+    # Handle SDP answer from response.jsep.sdp
+    print(f"SDP Answer: {response.jsep.sdp}")
+
+    # Clean up
+    await publisher.leave()
+    await publisher.detach()
+
+# Attach as a subscriber
+
+async def subscribe_to_room():
+    # Attach as a subscriber
+    subscriber = await Plugin.attach(
+        type="videoroom",
+        mode="subscriber",
+        room=1234
+    )
+
+    # Subscribe to publisher's streams
+    streams = [
+        SubscriberStreams(
+            feed='publisher_id',
+            mid='publisher_mid', # optional
+            sub_mid='publisher_sub_mid', # optional
+            crossrefid='...' #optional
+        )
+    ]
+
+    response = await subscriber.join(streams=streams)
+
+    # Send answer to start watching
+    await subscriber.watch(
+        sdp="your-sdp-answer",
+        sdp_type="answer"
+    )
+
+    # Clean up
+    await subscriber.leave()
+    await subscriber.detach()
+```
+
+## Room Management
+
+```python
+async def manage_videoroom():
+    plugin = await Plugin.attach(
+        type="videoroom",
+        mode="publisher",
+        room=1234
+    )
+    
+    # Create a new room
+    await plugin.create(
+        room=1234,
+        description="My Video Room",
+        publishers=10,
+        audiocodec="opus",
+        videocodec="vp8"
+    )
+    
+    # Check if room exists
+    exists = await plugin.exists()
+    print(f"Room exists: {exists}")
+    
+    # List participants
+    participants = await plugin.participants()
+    for p in participants:
+        print(f"Participant: {p.display}")
+    
+    # Destroy room
+    await plugin.destroy(secret="admin-secret", permanent=True)
+```
+
+# Plugin Usage
+## Available Plugins
+### The library supports the following Janus plugins:
+
+| Plugin        | Type          | Description                      |
+|---------------|---------------|----------------------------------|
+| **VideoRoom** | `videoroom`   | Multi-party video conferencing   |
+| **AudioBridge** | `audiobridge` | Audio conferencing rooms       |
+| **TextRoom**  | `textroom`    | Text chat rooms                  |
+| **P2P**       | `p2p`         | Peer-to-peer video calls         |
+| **Streaming** | `streaming`   | Media streaming                  |
+| **SIP**       | `sip`         | SIP gateway integration          |
+
+```python
+# Method 1: Using Plugin.attach (recommended)
+plugin = await Plugin.attach(
+    type="videoroom",
+    mode="publisher",
+    room=1234,
+    username="user123"
+)
+
+# Method 2: Direct instantiation (Not recommended)
+from janus_api.plugins.videoroom import Publisher
+
+publisher = Publisher(
+    plugin_id=None,
+    session=session,
+    room=1234,
+    username="user123"
+)
+await publisher.attach()
+```
+
+## Event Handling
+
+```python
+from janus_api.models.response import JanusResponse
+
+
+def on_plugin_event(event: JanusResponse):
+    print(f"Received event: {event.plugindata.data}")
+
+
+plugin = await Plugin.attach(
+    type="videoroom",
+    mode="publisher",
+    room=1234,
+    on_event=on_plugin_event
+)
+```
+
+## Reactive Streams (RxPY)
+
+```python
+def on_rx_event(event):
+    print(f"ReactiveX event: {event}")
+
+
+plugin = await Plugin.attach(
+    type="videoroom",
+    mode="publisher",
+    room=1234,
+    on_rx_event=on_rx_event
+)
+
+# Start reactive stream
+plugin.start() # already called internally. you dont need to call it manually again
+
+# Stop when done
+plugin.stop() # already called internally. you dont need to call it manually again
+```
+
+## Trickle ICE
+
+```python
+from janus_api.models.request import TrickleCandidate
+
+# Send ICE candidates
+candidates = [
+    TrickleCandidate(
+        sdpMLineIndex=0,
+        candidate="candidate:..."
+    )
+]
+await plugin.trickle(candidates)
+
+# Signal trickle complete
+await plugin.complete_trickle()
+```
+
+# Session Management
+## Using Session Context
+
+```python
+from contextlib import asynccontextmanager
+from janus_api.session import WebsocketSession
+
+@asynccontextmanager
+async def with_session():
+    session = WebsocketSession()
+
+    try:
+        await session.create()
+
+        # Attach plugins and interact
+        plugin = await Plugin.attach(
+            type="videoroom",
+            mode="publisher",
+            room=1234
+        )
+
+        # ... your code ...
+
+    finally:
+        await session.destroy()
+```
+
+## Keep-Alive
+Sessions automatically handle keep-alive messages to maintain the connection with Janus.
+
+## Configuration
+### Websocket Connection
+Configure the WebSocket connection by setting environment variables or passing parameters:
+
+```python
+from janus_api.session import WebsocketSession
+
+session = WebsocketSession(
+    session_id="custom-session-id"  # Optional
+)
+```
+
+## Error Handling
+```python
+from janus_api.exceptions import JanusException
+
+try:
+    plugin = await Plugin.attach(type="videoroom", mode="publisher", room=1234)
+    await plugin.join()
+except JanusException as e:
+    print(f"Janus error: {e}")
+except Exception as e:
+    print(f"Unexpected error: {e}")
+```
+
+# API Reference
+## Videoroom Plugin
+### Publisher Methods
+
+ - join(**kwargs) - Join a room as publisher
+ - join_and_configure(sdp, sdp_type, **kwargs) - Join and configure in one step
+ - publish(sdp, sdp_type, **kwargs) - Publish media
+ - configure(sdp, sdp_type, **kwargs) - Reconfigure publisher
+ - unpublish() - Stop publishing
+ - leave() - Leave the room
+### Subscriber Methods
+ - join(streams) - Join as subscriber
+ - subscribe(streams) - Subscribe to streams
+ - watch(sdp, sdp_type) - Start watching streams
+ - update(add, drop) - Update subscriptions
+ - unsubscribe(streams) - Unsubscribe from streams
+ - configure(streams) - Configure subscriber streams
+ - pause() - Pause receiving media
+ - resume() - Resume receiving media
+ - leave() - Leave the room
+### Room Management
+ - create(**kwargs) - Create a new room
+ - destroy(secret, permanent) - Destroy a room
+ - exists() - Check if room exists
+ - participants() - List room participants
+ - kick(password, user_id) - Kick user(s) from room
+ - moderate(**kwargs) - Moderate room settings
+ - allowed(passcode, action, tokens) - Manage allowed tokens
+### Base Plugin Methods
+All plugins inherit these methods:
+ - attach() - Attach plugin to session
+ - detach() - Detach plugin from session
+ - send(body, jsep) - Send message to plugin
+ - trickle(candidates) - Send ICE candidates
+ - complete_trickle() - Signal ICE gathering complete
+
+# Development
+## Project Structure
+
+janus-api/
+├── src/
+│   └── janus_api/
+│       ├── models/         # Pydantic models
+│       ├── plugins/        # Plugin implementations
+│       ├── session/        # Session management
+│       ├── transport/      # Transport layer (WebSocket)
+│       ├── types/          # Type definitions
+│       ├── manager.py      # Plugin manager
+│       ├── utils.py        # Utility functions
+│       └── exceptions.py   # Custom exceptions
+├── pyproject.toml
+└── README.md
+
+## Requirements
+- Python 3.10+
+- asyncio
+- websockets
+- pydantic
+- pyee (for event emitters)
+- reactivex (for reactive streams)
+
+## Contributing
+Contributions are welcome! Please feel free to submit a Pull Request.
+## License
+[Your License Here]
+## Credits
+Built for use with the [Janus WebRTC Gateway](https://janus.conf.meetecho.com/).
+## Support
+For issues and questions:
+- GitHub Issues: [https://github.com/Leydotpy/Janus-API/issues]
+- Documentation: [Your Docs URL]
+
+## Roadmap
+- HTTP/REST transport support
+- Additional plugin implementations
+- Comprehensive test coverage
+- Enhanced documentation with more examples
+- Type stubs for better IDE support
