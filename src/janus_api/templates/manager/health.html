@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Manager Health
+{% endblock %}
+
+<div>
+    {% block content %}
+    <p>Service: {{health.service}}</p>
+    <p>Attached: {{health.attached}}</p>
+    <p>Plugin ID: {{health.plugin_id}}</p>
+    <p>Attached Since: {{health.attached_since}}</p>
+    <p>Room: {{health.sample_room_check}}</p>
+    <p>Query: {{room}}</p>
+
+    <p>ppm: {{state.ppm}}</p>
+    <p>janus instance: {{state.janus}}</p>
+    {% endblock %}
+</div>

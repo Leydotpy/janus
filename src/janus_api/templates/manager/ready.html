@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Manager Ready
+{% endblock %}
+
+<div>
+    {% block content %}
+    <p>Ready: {{ready.ready}}</p>
+    <p>detail: {{ready.detail}}</p>
+    {% if ready.error %}
+        <p>error: {{ready.detail}}</p>
+    {% endif %}
+    <p>Query: {{room}}</p>
+    {% endblock %}
+</div>

@@ -1,0 +1,1 @@
+from janus_api.contrib.admin.db._migrate import migrate

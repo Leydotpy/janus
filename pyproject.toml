@@ -1,0 +1,113 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+# The product is called "Janus Core". The exact `janus-core` distribution and
+# `janus_core` import namespace are already owned by an unrelated PyPI project.
+name = "janus-api"
+version = "2.0.5"
+description = "Plugin-agnostic async Python core for the Janus WebRTC Gateway"
+authors = [{ name = "Leydotpy", email = "leydotpy.dev@gmail.com" }]
+license = "MIT"
+license-files = ["LICENSE"]
+readme = "README.md"
+requires-python = ">=3.11"
+keywords = ["janus", "webrtc", "asyncio", "websocket", "media-server"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: AsyncIO",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Communications",
+    "Topic :: Internet",
+    "Typing :: Typed",
+]
+dependencies = [
+    "pydantic>=2.10,<3",
+    "reactivex>=4.0,<5",
+    "websockets>=14,<17",
+]
+
+[project.optional-dependencies]
+http = [
+    "httpx>=0.27,<1",
+    "idna>=3.15,<4",
+]
+asgi = [
+    "fastapi>=0.115,<1",
+    "starlette>=1.3.1,<2",
+]
+admin = [
+    "asyncpg>=0.29,<1",
+]
+events = ["aiokafka>=0.12,<1"]
+ops = [
+    "aiokafka>=0.12,<1",
+    "asyncpg>=0.29,<1",
+    "fastapi>=0.115,<1",
+    "httpx>=0.27,<1",
+    "idna>=3.15,<4",
+    "starlette>=1.3.1,<2",
+]
+server = ["uvicorn>=0.30,<1"]
+
+[project.urls]
+Homepage = "https://janus.conf.meetecho.com/"
+Documentation = "https://janus.conf.meetecho.com/docs/"
+Repository = "https://github.com/Leydotpy/Janus-API"
+Issues = "https://github.com/Leydotpy/Janus-API/issues"
+
+[dependency-groups]
+dev = [
+    "build>=1.2,<2",
+    "mypy>=1.14,<2",
+    "pytest>=8.3,<10",
+    "pytest-asyncio>=0.25,<2",
+    "pytest-cov>=6,<8",
+    "ruff>=0.9,<1",
+]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["janus_api*"]
+exclude = ["janus_api.tests*", "janus_api.*.tests*"]
+
+[tool.setuptools.package-data]
+janus_api = ["py.typed"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "integration: requires an external service",
+    "janus: requires a running Janus Gateway",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+extend-exclude = ["django_intergration", "test"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC", "C4", "SIM", "RUF"]
+# Public async APIs intentionally expose per-operation timeout controls.
+ignore = ["ASYNC109", "E501"]
+
+[tool.mypy]
+python_version = "3.11"
+check_untyped_defs = true
+disallow_any_generics = true
+no_implicit_optional = true
+show_error_codes = true
+warn_redundant_casts = true
+warn_unused_ignores = true
