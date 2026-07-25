@@ -112,7 +112,7 @@ class VideoRoomMixin(Plugin):
     async def destroy(self, *, secret: str | None = None, permanent: bool = False, room: str | int | None = None):
         body = VideoRoomDeleteRequest(
             request="destroy",
-            room=str(room or self.room),
+            room=int(room or self.room),
             secret=secret,
             permanent=permanent,
         )
@@ -133,7 +133,7 @@ class VideoRoomMixin(Plugin):
         return await self.session.send(completed)
 
     async def exists(self, room: str | int | None = None) -> bool:
-        body = VideoRoomExistsRequest(request="exists", room=str(room or self.room))
+        body = VideoRoomExistsRequest(request="exists", room=int(room or self.room))
         response = await self.send(body)
         return bool(response.plugindata.data.exists)
 
@@ -185,8 +185,8 @@ class Publisher(VideoRoomMixin):
     ) -> JanusResponse:
         body = StopRTPForwardRequest(
             request="stop_rtp_forward",
-            room=str(room or self.room),
-            publisher_id=str(publisher_id),
+            room=int(room or self.room),
+            publisher_id=int(publisher_id),
             stream_id=stream_id,
         )
         return await self.send(body)
@@ -199,8 +199,8 @@ class Subscriber(VideoRoomMixin):
         body = ParticipantSubscribeRequest(request="subscribe", streams=streams)
         return await self.send(body)
 
-    async def update(self, add: List[SubscriberStreams] = None, drop: List[SubscriberStreams] = None):
-        body = ParticipantSubscriberUpdateStreamsRequest(request="update", subscribe=add, unsubscribe=drop)
+    async def update(self, add: List[SubscriberStreams] | None = None, drop: List[SubscriberStreams] | None = None):
+        body = ParticipantSubscriberUpdateStreamsRequest(request="update", subscribe=add if add else [], unsubscribe=drop if drop else [])
         return await self.send(body)
 
     async def unsubscribe(self, streams: List[SubscriberStreams]):

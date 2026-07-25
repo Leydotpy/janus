@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from ..utils import generate_secure_id
+
 """Pydantic models for the Janus VideoRoom plugin."""
 
 import uuid
@@ -37,7 +39,7 @@ class DummyStream(StrictBaseModel):
 class Room(StrictBaseModel):
     """VideoRoom room configuration shared by create and edit requests."""
 
-    room: int | str
+    room: int | None = Field(default_factory=generate_secure_id)
     permanent: bool = False
     description: str | None = None
     is_private: bool = False
@@ -94,36 +96,36 @@ class VideoRoomEditRequest(PluginMessageBase, Room):
 
 class VideoRoomDeleteRequest(PluginMessageBase):
     request: Literal["destroy"] = "destroy"
-    room: int | str
+    room: int
     secret: str | None = None
     permanent: bool = False
 
 
 class VideoRoomExistsRequest(PluginMessageBase):
     request: Literal["exists"] = "exists"
-    room: int | str
+    room: int
 
 
 class RoomCheckAllowedTokenRequest(PluginMessageBase):
     request: Literal["allowed"] = "allowed"
     secret: str | None = None
     action: Literal["enable", "disable", "add", "remove"]
-    room: int | str
+    room: int
     allowed: list[str]
 
 
 class KickUserFromRoomRequest(PluginMessageBase):
     request: Literal["kick"] = "kick"
     secret: str | None = None
-    room: int | str
-    id: int | str
+    room: int
+    id: int
 
 
 class ModerateRoomRequest(PluginMessageBase):
     request: Literal["moderate"] = "moderate"
     secret: str | None = None
-    room: int | str
-    id: int | str
+    room: int
+    id: int
     mid: str
     mute: bool
 
@@ -134,7 +136,7 @@ class ListRoomRequest(PluginMessageBase):
 
 class ListRoomParticipantsRequest(PluginMessageBase):
     request: Literal["listparticipants"] = "listparticipants"
-    room: int | str
+    room: int
 
 
 class RTPForwardStream(StrictBaseModel):
@@ -156,8 +158,8 @@ class RTPForwardStream(StrictBaseModel):
 
 class RTPForwardRequest(PluginMessageBase):
     request: Literal["rtp_forward"] = "rtp_forward"
-    room: int | str
-    publisher_id: int | str
+    room: int
+    publisher_id: int
     streams: list[RTPForwardStream]
     host: str | None = None
     host_family: Literal["ipv4", "ipv6"] | None = None
@@ -168,29 +170,29 @@ class RTPForwardRequest(PluginMessageBase):
 
 class StopRTPForwardRequest(PluginMessageBase):
     request: Literal["stop_rtp_forward"] = "stop_rtp_forward"
-    room: int | str
-    publisher_id: int | str
+    room: int
+    publisher_id: int
     stream_id: int
 
 
 class VideoRoomJoin(PluginMessageBase):
     request: Literal["join"] = "join"
     ptype: Literal["publisher", "subscriber"]
-    room: int | str
+    room: int
     pin: str | None = None
-    private_id: int | str | None = None
+    private_id: int | None = None
 
 
 class ParticipantPublisherJoinRequest(VideoRoomJoin):
     ptype: Literal["publisher"] = "publisher"
     display: str | None = None
-    id: str | None = Field(default_factory=lambda: str(uuid.uuid4()))
+    id: int | None = Field(default_factory=generate_secure_id)
     token: str | None = None
     metadata: dict[str, str] | None = None
 
 
 class SubscriberStreams(StrictBaseModel):
-    feed: int | str
+    feed: int
     mid: str
     crossrefid: str
     sub_mid: str | None = None
@@ -201,7 +203,7 @@ class ParticipantSubscribeJoinRequest(VideoRoomJoin):
     use_msid: bool = False
     autoupdate: bool = True
     streams: list[SubscriberStreams] | None = None
-    feed: int | str | None = None
+    feed: int | None = None
     audio: bool | None = None
     video: bool | None = None
     data: bool | None = None
@@ -252,7 +254,7 @@ class PublisherJoinAndConfigureRequest(PublisherConfigureRequest, ParticipantPub
 
 class EnableRecordingRequest(PluginMessageBase):
     request: Literal["enable_recording"] = "enable_recording"
-    room: int | str
+    room: int
     secret: str | None = None
     record: bool = False
 
