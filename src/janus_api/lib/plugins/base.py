@@ -11,7 +11,7 @@ from typing import (
     Optional,
     Type,
     TypeVar,
-    Union, TypedDict, Required, Unpack, Self, TYPE_CHECKING,
+    Union, TypedDict, Required, Unpack, Self, TYPE_CHECKING, Sequence,
 )
 
 from reactivex import Subject
@@ -215,11 +215,22 @@ class Plugin(metaclass=PluginMeta):
         return resp
 
     # Convenience methods that concrete plugin implementations will commonly implement
-    async def trickle(self, candidates: list[TrickleCandidate]) -> JanusResponse:
+    async def trickle(self, candidates: TrickleCandidate | Sequence[TrickleCandidate]) -> JanusResponse:
         from janus_api.models.request import TrickleMessageRequest
-
-        body = TrickleMessageRequest(janus="trickle", session_id=self.session.id, handle_id=self.id,
-                                     candidates=candidates, )
+        if isinstance(candidates, TrickleCandidate):
+            body = TrickleMessageRequest(
+                janus="trickle",
+                session_id=self.session.id,
+                handle_id=self.id,
+                candidate=candidates,
+            )
+        else:
+            body = TrickleMessageRequest(
+                janus="trickle",
+                session_id=self.session.id,
+                handle_id=self.id,
+                candidates=list(candidates),
+            )
         return await self.session.send(body)
 
     @property
